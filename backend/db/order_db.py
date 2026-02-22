@@ -1,3 +1,5 @@
+import psycopg2
+import psycopg2.extras
 from typing import Optional, Tuple
 from config.database import get_db_connection, close_db_connection
 
@@ -9,10 +11,10 @@ class OrderDB:
         cursor = conn.cursor()
 
         try:
-            query = "INSERT INTO orders (user_id, total_amount, status, shipping_address, created_at) VALUES (%s, %s, %s, %s, NOW())"
+            query = "INSERT INTO orders (user_id, total_amount, status, shipping_address, created_at) VALUES (%s, %s, %s, %s, NOW()) RETURNING id"
             cursor.execute(query, (user_id, total_amount, status, shipping_address))
             conn.commit()
-            order_id = cursor.lastrowid
+            order_id = cursor.fetchone()[0]
             return {"id": order_id, "user_id": user_id, "total_amount": total_amount, "status": status}
         finally:
             cursor.close()
@@ -22,7 +24,7 @@ class OrderDB:
     def get_order_by_id(order_id: int) -> Optional[dict]:
         """Get order by ID"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
             query = "SELECT * FROM orders WHERE id = %s"
@@ -36,7 +38,7 @@ class OrderDB:
     def get_user_orders(user_id: int, limit: int = 10, offset: int = 0) -> Tuple[list, int]:
         """Get orders by user ID"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
             query = "SELECT * FROM orders WHERE user_id = %s ORDER BY created_at DESC LIMIT %s OFFSET %s"
@@ -56,7 +58,7 @@ class OrderDB:
     def get_all_orders(limit: int = 10, offset: int = 0) -> Tuple[list, int]:
         """Get all orders (admin)"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
             query = "SELECT * FROM orders ORDER BY created_at DESC LIMIT %s OFFSET %s"
