@@ -1,3 +1,5 @@
+import psycopg2
+import psycopg2.extras
 from typing import Optional, Tuple
 from config.database import get_db_connection, close_db_connection
 from utils.validators import validate_price, validate_stock
@@ -17,10 +19,10 @@ class ProductDB:
         cursor = conn.cursor()
 
         try:
-            query = "INSERT INTO products (name, description, price, stock, category, image_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())"
+            query = "INSERT INTO products (name, description, price, stock, category, image_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW()) RETURNING id"
             cursor.execute(query, (name, description, price, stock, category, image_url))
             conn.commit()
-            product_id = cursor.lastrowid
+            product_id = cursor.fetchone()[0]
             return {"id": product_id, "name": name, "price": price, "stock": stock}
         finally:
             cursor.close()
@@ -30,7 +32,7 @@ class ProductDB:
     def get_product_by_id(product_id: int) -> Optional[dict]:
         """Get product by ID"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
             query = "SELECT * FROM products WHERE id = %s"
@@ -44,7 +46,7 @@ class ProductDB:
     def get_all_products(limit: int = 10, offset: int = 0, category: str = None) -> Tuple[list, int]:
         """Get all products with pagination"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
             if category:
@@ -113,15 +115,15 @@ class ProductDB:
     def search_products(search_term: str, limit: int = 10, offset: int = 0) -> Tuple[list, int]:
         """Search products"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
         try:
             search_term = f"%{search_term}%"
-            query = "SELECT * FROM products WHERE name LIKE %s OR description LIKE %s LIMIT %s OFFSET %s"
+            query = "SELECT * FROM products WHERE name ILIKE %s OR description ILIKE %s LIMIT %s OFFSET %s"
             cursor.execute(query, (search_term, search_term, limit, offset))
             products = cursor.fetchall()
 
-            count_query = "SELECT COUNT(*) as total FROM products WHERE name LIKE %s OR description LIKE %s"
+            count_query = "SELECT COUNT(*) as total FROM products WHERE name ILIKE %s OR description ILIKE %s"
             cursor.execute(count_query, (search_term, search_term))
             total = cursor.fetchone()["total"]
 

@@ -1,12 +1,12 @@
 -- =============================================
--- DUMMY DATA FOR E-COMMERCE APPLICATION
+-- DUMMY DATA FOR E-COMMERCE APPLICATION (PostgreSQL)
 -- =============================================
 
 -- Clear existing data (optional - uncomment if needed)
--- DELETE FROM order_items;
--- DELETE FROM orders;
--- DELETE FROM products;
--- DELETE FROM users;
+-- TRUNCATE order_items CASCADE;
+-- TRUNCATE orders CASCADE;
+-- TRUNCATE products CASCADE;
+-- TRUNCATE users CASCADE;
 
 -- =============================================
 -- 1. INSERT USERS
@@ -57,12 +57,12 @@ INSERT INTO products (name, description, price, stock, category, image_url, crea
 -- =============================================
 
 INSERT INTO orders (user_id, total_amount, status, shipping_address, created_at) VALUES
-(2, 229.97, 'delivered', '123 Main Street, New York, NY 10001', DATE_SUB(NOW(), INTERVAL 30 DAY)),
-(3, 179.98, 'shipped', '456 Oak Avenue, Los Angeles, CA 90028', DATE_SUB(NOW(), INTERVAL 15 DAY)),
-(4, 349.97, 'processing', '789 Pine Road, Chicago, IL 60601', DATE_SUB(NOW(), INTERVAL 7 DAY)),
-(5, 89.98, 'pending', '321 Elm Street, Houston, TX 77001', DATE_SUB(NOW(), INTERVAL 2 DAY)),
-(2, 139.98, 'delivered', '123 Main Street, New York, NY 10001', DATE_SUB(NOW(), INTERVAL 45 DAY)),
-(3, 269.97, 'delivered', '456 Oak Avenue, Los Angeles, CA 90028', DATE_SUB(NOW(), INTERVAL 60 DAY));
+(2, 229.97, 'delivered', '123 Main Street, New York, NY 10001', NOW() - INTERVAL '30 days'),
+(3, 179.98, 'shipped', '456 Oak Avenue, Los Angeles, CA 90028', NOW() - INTERVAL '15 days'),
+(4, 349.97, 'processing', '789 Pine Road, Chicago, IL 60601', NOW() - INTERVAL '7 days'),
+(5, 89.98, 'pending', '321 Elm Street, Houston, TX 77001', NOW() - INTERVAL '2 days'),
+(2, 139.98, 'delivered', '123 Main Street, New York, NY 10001', NOW() - INTERVAL '45 days'),
+(3, 269.97, 'delivered', '456 Oak Avenue, Los Angeles, CA 90028', NOW() - INTERVAL '60 days');
 
 -- =============================================
 -- 4. INSERT ORDER ITEMS
@@ -70,37 +70,37 @@ INSERT INTO orders (user_id, total_amount, status, shipping_address, created_at)
 
 INSERT INTO order_items (order_id, product_id, quantity, price, created_at) VALUES
 -- Order 1 (Jane Smith)
-(1, 1, 1, 129.99, DATE_SUB(NOW(), INTERVAL 30 DAY)),
-(1, 3, 1, 39.99, DATE_SUB(NOW(), INTERVAL 30 DAY)),
-(1, 2, 1, 15.99, DATE_SUB(NOW(), INTERVAL 30 DAY)),
+(1, 1, 1, 129.99, NOW() - INTERVAL '30 days'),
+(1, 3, 1, 39.99, NOW() - INTERVAL '30 days'),
+(1, 2, 1, 15.99, NOW() - INTERVAL '30 days'),
 
 -- Order 2 (Robert Johnson)
-(2, 6, 2, 24.99, DATE_SUB(NOW(), INTERVAL 15 DAY)),
-(2, 10, 1, 19.99, DATE_SUB(NOW(), INTERVAL 15 DAY)),
-(2, 15, 1, 34.99, DATE_SUB(NOW(), INTERVAL 15 DAY)),
+(2, 6, 2, 24.99, NOW() - INTERVAL '15 days'),
+(2, 10, 1, 19.99, NOW() - INTERVAL '15 days'),
+(2, 15, 1, 34.99, NOW() - INTERVAL '15 days'),
 
 -- Order 3 (Sarah Williams)
-(3, 8, 1, 89.99, DATE_SUB(NOW(), INTERVAL 7 DAY)),
-(3, 9, 1, 149.99, DATE_SUB(NOW(), INTERVAL 7 DAY)),
-(3, 4, 1, 59.99, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(3, 8, 1, 89.99, NOW() - INTERVAL '7 days'),
+(3, 9, 1, 149.99, NOW() - INTERVAL '7 days'),
+(3, 4, 1, 59.99, NOW() - INTERVAL '7 days'),
 
 -- Order 4 (Michael Brown)
-(4, 20, 1, 24.99, DATE_SUB(NOW(), INTERVAL 2 DAY)),
-(4, 19, 1, 29.99, DATE_SUB(NOW(), INTERVAL 2 DAY)),
-(4, 2, 1, 15.99, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(4, 20, 1, 24.99, NOW() - INTERVAL '2 days'),
+(4, 19, 1, 29.99, NOW() - INTERVAL '2 days'),
+(4, 2, 1, 15.99, NOW() - INTERVAL '2 days'),
 
 -- Order 5 (Jane Smith)
-(5, 11, 1, 69.99, DATE_SUB(NOW(), INTERVAL 45 DAY)),
-(5, 12, 1, 29.99, DATE_SUB(NOW(), INTERVAL 45 DAY)),
-(5, 2, 1, 15.99, DATE_SUB(NOW(), INTERVAL 45 DAY)),
-(5, 3, 1, 24.01, DATE_SUB(NOW(), INTERVAL 45 DAY)),
+(5, 11, 1, 69.99, NOW() - INTERVAL '45 days'),
+(5, 12, 1, 29.99, NOW() - INTERVAL '45 days'),
+(5, 2, 1, 15.99, NOW() - INTERVAL '45 days'),
+(5, 3, 1, 24.01, NOW() - INTERVAL '45 days'),
 
 -- Order 6 (Robert Johnson)
-(6, 7, 1, 69.99, DATE_SUB(NOW(), INTERVAL 60 DAY)),
-(6, 13, 1, 44.99, DATE_SUB(NOW(), INTERVAL 60 DAY)),
-(6, 16, 1, 35.99, DATE_SUB(NOW(), INTERVAL 60 DAY)),
-(6, 21, 1, 14.99, DATE_SUB(NOW(), INTERVAL 60 DAY)),
-(6, 5, 1, 49.99, DATE_SUB(NOW(), INTERVAL 60 DAY));
+(6, 7, 1, 69.99, NOW() - INTERVAL '60 days'),
+(6, 13, 1, 44.99, NOW() - INTERVAL '60 days'),
+(6, 16, 1, 35.99, NOW() - INTERVAL '60 days'),
+(6, 20, 1, 14.99, NOW() - INTERVAL '60 days'),
+(6, 5, 1, 49.99, NOW() - INTERVAL '60 days');
 
 -- =============================================
 -- VERIFICATION QUERIES
