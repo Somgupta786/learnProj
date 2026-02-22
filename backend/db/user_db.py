@@ -1,4 +1,5 @@
-import mysql.connector
+import psycopg2
+from psycopg2 import Error
 from typing import Optional, Tuple
 from config.database import get_db_connection, close_db_connection
 from utils.validators import validate_user_email, validate_password
@@ -25,11 +26,11 @@ class UserDB:
         cursor = conn.cursor()
 
         try:
-            query = "INSERT INTO users (name, email, password, phone, role, created_at) VALUES (%s, %s, %s, %s, %s, NOW())"
+            query = "INSERT INTO users (name, email, password, phone, role, created_at) VALUES (%s, %s, %s, %s, %s, NOW()) RETURNING id, name, email, phone, role, created_at"
             cursor.execute(query, (name, email, hashed_password.decode('utf-8'), phone, role))
             conn.commit()
-            user_id = cursor.lastrowid
-            return {"id": user_id, "name": name, "email": email, "phone": phone, "role": role}
+            result = cursor.fetchone()
+            return {"id": result[0], "name": result[1], "email": result[2], "phone": result[3], "role": result[4], "created_at": result[5]}
         finally:
             cursor.close()
             close_db_connection(conn)
@@ -38,12 +39,23 @@ class UserDB:
     def get_user_by_email(email: str) -> Optional[dict]:
         """Get user by email"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
         try:
-            query = "SELECT * FROM users WHERE email = %s"
+            query = "SELECT id, name, email, password, phone, role, created_at FROM users WHERE email = %s"
             cursor.execute(query, (email,))
-            return cursor.fetchone()
+            result = cursor.fetchone()
+            if result:
+                return {
+                    "id": result[0],
+                    "name": result[1],
+                    "email": result[2],
+                    "password": result[3],
+                    "phone": result[4],
+                    "role": result[5],
+                    "created_at": result[6]
+                }
+            return None
         finally:
             cursor.close()
             close_db_connection(conn)
@@ -52,12 +64,22 @@ class UserDB:
     def get_user_by_id(user_id: int) -> Optional[dict]:
         """Get user by ID"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
         try:
             query = "SELECT id, name, email, phone, role, created_at FROM users WHERE id = %s"
             cursor.execute(query, (user_id,))
-            return cursor.fetchone()
+            result = cursor.fetchone()
+            if result:
+                return {
+                    "id": result[0],
+                    "name": result[1],
+                    "email": result[2],
+                    "phone": result[3],
+                    "role": result[4],
+                    "created_at": result[5]
+                }
+            return None
         finally:
             cursor.close()
             close_db_connection(conn)
@@ -66,16 +88,27 @@ class UserDB:
     def get_all_users(limit: int = 10, offset: int = 0) -> Tuple[list, int]:
         """Get all users with pagination"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
         try:
             query = "SELECT id, name, email, phone, role, created_at FROM users LIMIT %s OFFSET %s"
             cursor.execute(query, (limit, offset))
-            users = cursor.fetchall()
+            results = cursor.fetchall()
+            
+            users = []
+            for row in results:
+                users.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "email": row[2],
+                    "phone": row[3],
+                    "role": row[4],
+                    "created_at": row[5]
+                })
 
-            count_query = "SELECT COUNT(*) as total FROM users"
+            count_query = "SELECT COUNT(*) FROM users"
             cursor.execute(count_query)
-            total = cursor.fetchone()["total"]
+            total = cursor.fetchone()[0]
 
             return users, total
         finally:

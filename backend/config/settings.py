@@ -24,4 +24,4 @@ JWT_EXPIRE_DAYS = 7
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8501")
 
 # Database URL
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

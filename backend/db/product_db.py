@@ -17,11 +17,11 @@ class ProductDB:
         cursor = conn.cursor()
 
         try:
-            query = "INSERT INTO products (name, description, price, stock, category, image_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW())"
+            query = "INSERT INTO products (name, description, price, stock, category, image_url, created_at) VALUES (%s, %s, %s, %s, %s, %s, NOW()) RETURNING id, name, price, stock"
             cursor.execute(query, (name, description, price, stock, category, image_url))
             conn.commit()
-            product_id = cursor.lastrowid
-            return {"id": product_id, "name": name, "price": price, "stock": stock}
+            result = cursor.fetchone()
+            return {"id": result[0], "name": result[1], "price": result[2], "stock": result[3]}
         finally:
             cursor.close()
             close_db_connection(conn)
@@ -30,12 +30,24 @@ class ProductDB:
     def get_product_by_id(product_id: int) -> Optional[dict]:
         """Get product by ID"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
         try:
-            query = "SELECT * FROM products WHERE id = %s"
+            query = "SELECT id, name, description, price, stock, category, image_url, created_at FROM products WHERE id = %s"
             cursor.execute(query, (product_id,))
-            return cursor.fetchone()
+            result = cursor.fetchone()
+            if result:
+                return {
+                    "id": result[0],
+                    "name": result[1],
+                    "description": result[2],
+                    "price": result[3],
+                    "stock": result[4],
+                    "category": result[5],
+                    "image_url": result[6],
+                    "created_at": result[7]
+                }
+            return None
         finally:
             cursor.close()
             close_db_connection(conn)
@@ -44,26 +56,38 @@ class ProductDB:
     def get_all_products(limit: int = 10, offset: int = 0, category: str = None) -> Tuple[list, int]:
         """Get all products with pagination"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
         try:
             if category:
-                query = "SELECT * FROM products WHERE category = %s LIMIT %s OFFSET %s"
+                query = "SELECT id, name, description, price, stock, category, image_url, created_at FROM products WHERE category = %s LIMIT %s OFFSET %s"
                 cursor.execute(query, (category, limit, offset))
             else:
-                query = "SELECT * FROM products LIMIT %s OFFSET %s"
+                query = "SELECT id, name, description, price, stock, category, image_url, created_at FROM products LIMIT %s OFFSET %s"
                 cursor.execute(query, (limit, offset))
 
-            products = cursor.fetchall()
+            results = cursor.fetchall()
+            products = []
+            for row in results:
+                products.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "price": row[3],
+                    "stock": row[4],
+                    "category": row[5],
+                    "image_url": row[6],
+                    "created_at": row[7]
+                })
 
             if category:
-                count_query = "SELECT COUNT(*) as total FROM products WHERE category = %s"
+                count_query = "SELECT COUNT(*) FROM products WHERE category = %s"
                 cursor.execute(count_query, (category,))
             else:
-                count_query = "SELECT COUNT(*) as total FROM products"
+                count_query = "SELECT COUNT(*) FROM products"
                 cursor.execute(count_query)
 
-            total = cursor.fetchone()["total"]
+            total = cursor.fetchone()[0]
             return products, total
         finally:
             cursor.close()
@@ -113,17 +137,30 @@ class ProductDB:
     def search_products(search_term: str, limit: int = 10, offset: int = 0) -> Tuple[list, int]:
         """Search products"""
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
+        cursor = conn.cursor()
 
         try:
             search_term = f"%{search_term}%"
-            query = "SELECT * FROM products WHERE name LIKE %s OR description LIKE %s LIMIT %s OFFSET %s"
+            query = "SELECT id, name, description, price, stock, category, image_url, created_at FROM products WHERE name ILIKE %s OR description ILIKE %s LIMIT %s OFFSET %s"
             cursor.execute(query, (search_term, search_term, limit, offset))
-            products = cursor.fetchall()
+            results = cursor.fetchall()
+            
+            products = []
+            for row in results:
+                products.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "price": row[3],
+                    "stock": row[4],
+                    "category": row[5],
+                    "image_url": row[6],
+                    "created_at": row[7]
+                })
 
-            count_query = "SELECT COUNT(*) as total FROM products WHERE name LIKE %s OR description LIKE %s"
+            count_query = "SELECT COUNT(*) FROM products WHERE name ILIKE %s OR description ILIKE %s"
             cursor.execute(count_query, (search_term, search_term))
-            total = cursor.fetchone()["total"]
+            total = cursor.fetchone()[0]
 
             return products, total
         finally:

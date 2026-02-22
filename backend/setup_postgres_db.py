@@ -1,44 +1,48 @@
 #!/usr/bin/env python
-"""Script to set up database schema and import dummy data"""
-import mysql.connector
+"""Script to set up PostgreSQL database schema and import dummy data"""
+import psycopg2
+from psycopg2 import Error
 import sys
 
 def setup_database():
     """Create and populate database"""
     try:
-        # First, connect without specifying database to create it
+        # First, connect to default postgres database to create new database
         db_config_root = {
             'host': 'localhost',
-            'user': 'root',
+            'user': 'postgres',
             'password': 'Sh@250704',
+            'database': 'postgres'
         }
         
         print("=" * 60)
-        print("E-COMMERCE DATABASE SETUP")
+        print("E-COMMERCE DATABASE SETUP (PostgreSQL)")
         print("=" * 60 + "\n")
         
-        print("🔗 Connecting to MySQL server...")
-        conn = mysql.connector.connect(**db_config_root)
+        print("🔗 Connecting to PostgreSQL server...")
+        conn = psycopg2.connect(**db_config_root)
+        conn.autocommit = True
         cursor = conn.cursor()
         print("✅ Connected successfully!\n")
         
         # Create database if not exists
         print("🗄️  Creating database...")
-        cursor.execute("CREATE DATABASE IF NOT EXISTS ecommerce_db")
-        print("✅ Database created/verified\n")
+        cursor.execute("CREATE DATABASE ecommerce_db")
+        print("✅ Database created\n")
         cursor.close()
         conn.close()
         
         # Now connect to the specific database
         db_config = {
             'host': 'localhost',
-            'user': 'root',
+            'user': 'postgres',
             'password': 'Sh@250704',
             'database': 'ecommerce_db'
         }
         
         print("🔗 Connecting to ecommerce_db...")
-        conn = mysql.connector.connect(**db_config)
+        conn = psycopg2.connect(**db_config)
+        conn.autocommit = False
         cursor = conn.cursor()
         print("✅ Connected to ecommerce_db!\n")
         
@@ -48,16 +52,14 @@ def setup_database():
         # Users table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id INT PRIMARY KEY AUTO_INCREMENT,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 phone VARCHAR(20),
                 role VARCHAR(50) DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_email (email),
-                INDEX idx_role (role)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         print("  ✅ users table created")
@@ -65,7 +67,7 @@ def setup_database():
         # Products table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS products (
-                id INT PRIMARY KEY AUTO_INCREMENT,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
                 price DECIMAL(10, 2) NOT NULL,
@@ -73,9 +75,7 @@ def setup_database():
                 category VARCHAR(100),
                 image_url VARCHAR(500),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_category (category),
-                INDEX idx_name (name)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         print("  ✅ products table created")
@@ -83,16 +83,13 @@ def setup_database():
         # Orders table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS orders (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                user_id INT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 total_amount DECIMAL(10, 2) NOT NULL,
                 status VARCHAR(50) DEFAULT 'pending',
                 shipping_address TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                INDEX idx_user_id (user_id),
-                INDEX idx_status (status)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         print("  ✅ orders table created")
@@ -100,16 +97,12 @@ def setup_database():
         # Order items table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS order_items (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                order_id INT NOT NULL,
-                product_id INT NOT NULL,
+                id SERIAL PRIMARY KEY,
+                order_id INT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+                product_id INT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
                 quantity INT NOT NULL,
                 price DECIMAL(10, 2) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-                INDEX idx_order_id (order_id),
-                INDEX idx_product_id (product_id)
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         print("  ✅ order_items table created\n")
@@ -118,12 +111,7 @@ def setup_database():
         
         # Clear existing data first
         print("🧹 Clearing existing data...\n")
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-        cursor.execute("TRUNCATE TABLE order_items")
-        cursor.execute("TRUNCATE TABLE orders")
-        cursor.execute("TRUNCATE TABLE products")
-        cursor.execute("TRUNCATE TABLE users")
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+        cursor.execute("TRUNCATE TABLE order_items, orders, products, users CASCADE")
         conn.commit()
         
         # Step 2: Insert users
@@ -150,25 +138,21 @@ def setup_database():
         print("📦 Inserting products...\n")
         
         products_data = [
-            # Electronics
             ('Wireless Headphones', 'High-quality wireless headphones with noise cancellation and 30-hour battery life', 129.99, 50, 'Electronics', 'https://via.placeholder.com/300?text=Wireless+Headphones'),
             ('USB-C Cable (2m)', 'Durable USB-C charging and data transfer cable, supports fast charging', 15.99, 200, 'Electronics', 'https://via.placeholder.com/300?text=USB-C+Cable'),
             ('Portable Power Bank', '20000mAh power bank with dual USB ports and LED display', 39.99, 75, 'Electronics', 'https://via.placeholder.com/300?text=Power+Bank'),
             ('Bluetooth Speaker', 'Waterproof portable Bluetooth speaker with 12-hour battery', 59.99, 40, 'Electronics', 'https://via.placeholder.com/300?text=Bluetooth+Speaker'),
             ('USB Hub (7-in-1)', 'Multi-port USB hub with HDMI, SD card reader, and 100W power delivery', 49.99, 60, 'Electronics', 'https://via.placeholder.com/300?text=USB+Hub'),
-            # Clothing
             ('Cotton T-Shirt', 'Premium quality 100% cotton t-shirt, comfortable and durable', 24.99, 150, 'Clothing', 'https://via.placeholder.com/300?text=Cotton+T-Shirt'),
             ('Denim Jeans', 'Classic blue denim jeans with stretch fit for comfort', 69.99, 100, 'Clothing', 'https://via.placeholder.com/300?text=Denim+Jeans'),
             ('Running Shoes', 'Lightweight running shoes with cushioned sole and breathable mesh', 89.99, 80, 'Clothing', 'https://via.placeholder.com/300?text=Running+Shoes'),
             ('Winter Jacket', 'Warm winter jacket with water-resistant and insulated lining', 149.99, 40, 'Clothing', 'https://via.placeholder.com/300?text=Winter+Jacket'),
             ('Cotton Socks Bundle', 'Pack of 5 pairs of premium cotton socks', 19.99, 200, 'Clothing', 'https://via.placeholder.com/300?text=Socks+Bundle'),
-            # Books
             ('Python Programming Guide', 'Comprehensive guide to Python programming for beginners to advanced', 34.99, 120, 'Books', 'https://via.placeholder.com/300?text=Python+Guide'),
             ('Web Development Basics', 'Learn HTML, CSS, and JavaScript from scratch', 29.99, 90, 'Books', 'https://via.placeholder.com/300?text=Web+Dev+Basics'),
             ('Data Science Handbook', 'Complete handbook on data analysis, machine learning, and visualization', 44.99, 60, 'Books', 'https://via.placeholder.com/300?text=Data+Science'),
             ('Cloud Computing Essentials', 'AWS, Azure, and Google Cloud essentials for cloud engineers', 39.99, 70, 'Books', 'https://via.placeholder.com/300?text=Cloud+Computing'),
             ('Artificial Intelligence 101', 'Introduction to AI, machine learning, and neural networks', 49.99, 50, 'Books', 'https://via.placeholder.com/300?text=AI+101'),
-            # Home
             ('LED Desk Lamp', 'Adjustable LED desk lamp with USB charging port and touch control', 35.99, 45, 'Home', 'https://via.placeholder.com/300?text=LED+Lamp'),
             ('Cushion Set (4pcs)', 'Decorative cushions set for sofa, waterproof and machine washable', 59.99, 30, 'Home', 'https://via.placeholder.com/300?text=Cushion+Set'),
             ('Wall Clock', 'Modern minimalist wall clock with silent movement mechanism', 24.99, 85, 'Home', 'https://via.placeholder.com/300?text=Wall+Clock'),
@@ -280,7 +264,7 @@ def setup_database():
         
         return True
         
-    except mysql.connector.Error as err:
+    except Error as err:
         print(f"\n❌ Database error: {err}")
         return False
     except Exception as e:
