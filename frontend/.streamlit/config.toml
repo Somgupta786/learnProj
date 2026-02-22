@@ -18,6 +18,3 @@ headless = true
 runOnSave = true
 maxUploadSize = 200
 enableXsrfProtection = true
-
-[client]
-showErrorDetails = false
