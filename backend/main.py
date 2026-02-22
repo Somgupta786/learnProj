@@ -24,7 +24,7 @@ app.add_middleware(
 @app.get("/api/health")
 async def health_check():
     return {
-        "status": "Server is running",
+        "status": "Server is running without issues",
         "environment": NODE_ENV
     }
 
