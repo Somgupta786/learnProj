@@ -1,15 +1,28 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from config.settings import FRONTEND_URL, HOST, PORT, NODE_ENV
 from config.database import initialize_connection_pool
 
 # Import routes
 from routes import auth, products, orders
 
+# Lifespan context manager for startup/shutdown events
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage app lifecycle - startup and shutdown"""
+    # Startup
+    initialize_connection_pool()
+    print("[OK] Database connection pool initialized")
+    yield
+    # Shutdown (if needed)
+    print("[OK] Application shutdown")
+
 app = FastAPI(
     title="E-Commerce API",
     description="Modern E-Commerce API with FastAPI",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS Middleware
@@ -20,13 +33,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Initialize database connection pool on startup
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database connection pool on app startup"""
-    initialize_connection_pool()
-    print("[OK] Database connection pool initialized")
 
 # Health check route
 @app.get("/api/health")

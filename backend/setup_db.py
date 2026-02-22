@@ -1,24 +1,31 @@
 #!/usr/bin/env python
-"""Script to set up database schema and import dummy data"""
-import mysql.connector
+"""Script to set up PostgreSQL database schema and import dummy data"""
+import psycopg2
+from psycopg2 import sql
 import sys
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def setup_database():
     """Create and populate database"""
     try:
+        # Use environment variables (respects .env file)
         db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'Som@7866',
-            'database': 'ecommerce_db'
+            'host': os.getenv("DB_HOST", "localhost"),
+            'user': os.getenv("DB_USER", "postgres"),
+            'password': os.getenv("DB_PASSWORD", ""),
+            'database': os.getenv("DB_NAME", "ecommerce_db"),
+            'port': os.getenv("DB_PORT", "5432")
         }
         
         print("=" * 60)
-        print("E-COMMERCE DATABASE SETUP")
+        print("E-COMMERCE DATABASE SETUP (PostgreSQL)")
         print("=" * 60 + "\n")
         
         print("🔗 Connecting to database...")
-        conn = mysql.connector.connect(**db_config)
+        conn = psycopg2.connect(**db_config)
         cursor = conn.cursor()
         print("✅ Connected successfully!\n")
         
@@ -28,82 +35,80 @@ def setup_database():
         # Users table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS users (
-                id INT PRIMARY KEY AUTO_INCREMENT,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 phone VARCHAR(20),
                 role VARCHAR(50) DEFAULT 'user',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_email (email),
-                INDEX idx_role (role)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_email ON users(email)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_role ON users(role)")
         print("  ✅ users table created")
         
         # Products table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS products (
-                id INT PRIMARY KEY AUTO_INCREMENT,
+                id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL,
                 description TEXT,
-                price DECIMAL(10, 2) NOT NULL,
+                price NUMERIC(10, 2) NOT NULL,
                 stock INT NOT NULL DEFAULT 0,
                 category VARCHAR(100),
                 image_url VARCHAR(500),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_category (category),
-                INDEX idx_name (name)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_category ON products(category)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_name ON products(name)")
         print("  ✅ products table created")
         
         # Orders table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS orders (
-                id INT PRIMARY KEY AUTO_INCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id INT NOT NULL,
-                total_amount DECIMAL(10, 2) NOT NULL,
+                total_amount NUMERIC(10, 2) NOT NULL,
                 status VARCHAR(50) DEFAULT 'pending',
                 shipping_address TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                INDEX idx_user_id (user_id),
-                INDEX idx_status (status)
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_id ON orders(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_status ON orders(status)")
         print("  ✅ orders table created")
         
         # Order items table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS order_items (
-                id INT PRIMARY KEY AUTO_INCREMENT,
+                id SERIAL PRIMARY KEY,
                 order_id INT NOT NULL,
                 product_id INT NOT NULL,
                 quantity INT NOT NULL,
-                price DECIMAL(10, 2) NOT NULL,
+                price NUMERIC(10, 2) NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
-                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-                INDEX idx_order_id (order_id),
-                INDEX idx_product_id (product_id)
+                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
             )
         """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_order_id ON order_items(order_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_product_id ON order_items(product_id)")
         print("  ✅ order_items table created\n")
-        
+
         conn.commit()
         
         # Clear existing data first
         print("🧹 Clearing existing data...\n")
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-        cursor.execute("TRUNCATE TABLE order_items")
-        cursor.execute("TRUNCATE TABLE orders")
-        cursor.execute("TRUNCATE TABLE products")
-        cursor.execute("TRUNCATE TABLE users")
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+        cursor.execute("TRUNCATE TABLE order_items CASCADE")
+        cursor.execute("TRUNCATE TABLE orders CASCADE")
+        cursor.execute("TRUNCATE TABLE products CASCADE")
+        cursor.execute("TRUNCATE TABLE users CASCADE")
         conn.commit()
         
         # Step 2: Insert users
@@ -260,7 +265,7 @@ def setup_database():
         
         return True
         
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"\n❌ Database error: {err}")
         return False
     except Exception as e:

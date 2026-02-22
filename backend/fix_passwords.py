@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-"""Script to fix user passwords with proper bcrypt hashing"""
-import mysql.connector
+"""Script to fix user passwords with proper bcrypt hashing (PostgreSQL)"""
+import psycopg2
+import os
+from dotenv import load_dotenv
 from bcrypt import hashpw, gensalt
+
+load_dotenv()
 
 def fix_user_passwords():
     """Update all test user passwords with proper bcrypt hashes"""
@@ -14,14 +18,15 @@ def fix_user_passwords():
         print(f"✅ Bcrypt Hash: {hashed_password}\n")
         
         db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'Som@7866',
-            'database': 'ecommerce_db'
+            'host': os.getenv("DB_HOST", "localhost"),
+            'user': os.getenv("DB_USER", "postgres"),
+            'password': os.getenv("DB_PASSWORD", ""),
+            'database': os.getenv("DB_NAME", "ecommerce_db"),
+            'port': os.getenv("DB_PORT", "5432")
         }
         
         print("🔗 Connecting to database...")
-        conn = mysql.connector.connect(**db_config)
+        conn = psycopg2.connect(**db_config)
         cursor = conn.cursor()
         print("✅ Connected successfully!\n")
         

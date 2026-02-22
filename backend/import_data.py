@@ -1,20 +1,25 @@
 #!/usr/bin/env python
-"""Script to import schema and dummy data into the database"""
-import mysql.connector
+"""Script to import schema and dummy data into the database (PostgreSQL)"""
+import psycopg2
+import os
 import sys
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def create_schema():
     """Create database schema"""
     try:
         db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'Som@7866',
-            'database': 'ecommerce_db'
+            'host': os.getenv("DB_HOST", "localhost"),
+            'user': os.getenv("DB_USER", "postgres"),
+            'password': os.getenv("DB_PASSWORD", ""),
+            'database': os.getenv("DB_NAME", "ecommerce_db"),
+            'port': os.getenv("DB_PORT", "5432")
         }
         
         print("🔗 Connecting to database...")
-        conn = mysql.connector.connect(**db_config)
+        conn = psycopg2.connect(**db_config)
         cursor = conn.cursor()
         print("✅ Connected successfully!\n")
         
@@ -45,14 +50,15 @@ def import_dummy_data():
     """Read and execute SQL file"""
     try:
         db_config = {
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'Som@7866',
-            'database': 'ecommerce_db'
+            'host': os.getenv("DB_HOST", "localhost"),
+            'user': os.getenv("DB_USER", "postgres"),
+            'password': os.getenv("DB_PASSWORD", ""),
+            'database': os.getenv("DB_NAME", "ecommerce_db"),
+            'port': os.getenv("DB_PORT", "5432")
         }
         
         print("🔗 Connecting to database...")
-        conn = mysql.connector.connect(**db_config)
+        conn = psycopg2.connect(**db_config)
         cursor = conn.cursor()
         print("✅ Connected successfully!\n")
         
@@ -77,6 +83,7 @@ def import_dummy_data():
                 except Exception as e:
                     if 'is not valid' not in str(e) and 'You have an error' not in str(e):
                         print(f"  ⚠️  Statement: {statement[:60]}... - Error: {e}")
+
         
         conn.commit()
         
@@ -111,7 +118,7 @@ def import_dummy_data():
         
         return True
         
-    except mysql.connector.Error as err:
+    except psycopg2.Error as err:
         print(f"\n❌ Database error: {err}")
         return False
     except FileNotFoundError:
@@ -128,7 +135,7 @@ def import_dummy_data():
 
 if __name__ == '__main__':
     print("=" * 50)
-    print("E-COMMERCE DATABASE SETUP")
+    print("E-COMMERCE DATABASE SETUP (PostgreSQL)")
     print("=" * 50 + "\n")
     
     # Step 1: Create schema
