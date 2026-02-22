@@ -18,9 +18,9 @@ def initialize_connection_pool():
             database=DB_NAME,
             port=DB_PORT
         )
-        print("✓ Connection pool initialized successfully")
+        print("[OK] Connection pool initialized successfully")
     except Error as e:
-        print(f"✗ Failed to initialize connection pool: {e}")
+        print(f"[ERROR] Failed to initialize connection pool: {e}")
         raise e
 
 def get_db_connection():
@@ -32,7 +32,7 @@ def get_db_connection():
         connection = _connection_pool.getconn()
         return connection
     except Error as e:
-        print(f"✗ Database connection failed: {e}")
+        print(f"[ERROR] Database connection failed: {e}")
         raise e
 
 def close_db_connection(connection):

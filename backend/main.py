@@ -26,7 +26,7 @@ app.add_middleware(
 async def startup_event():
     """Initialize database connection pool on app startup"""
     initialize_connection_pool()
-    print("✓ Database connection pool initialized")
+    print("[OK] Database connection pool initialized")
 
 # Health check route
 @app.get("/api/health")

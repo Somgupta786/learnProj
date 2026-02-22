@@ -99,7 +99,7 @@ INSERT INTO order_items (order_id, product_id, quantity, price, created_at) VALU
 (6, 7, 1, 69.99, NOW() - INTERVAL '60 days'),
 (6, 13, 1, 44.99, NOW() - INTERVAL '60 days'),
 (6, 16, 1, 35.99, NOW() - INTERVAL '60 days'),
-(6, 21, 1, 14.99, NOW() - INTERVAL '60 days'),
+(6, 20, 1, 14.99, NOW() - INTERVAL '60 days'),
 (6, 5, 1, 49.99, NOW() - INTERVAL '60 days');
 
 -- =============================================
